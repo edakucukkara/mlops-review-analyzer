@@ -1,0 +1,14 @@
+artifact_uri: file:///c:/Users/Eda/OneDrive/Masa%C3%BCst%C3%BC/mlops_project/experiments/mlruns/606726760485292701/567d12579d844974a033ab84cfa029fb/artifacts
+end_time: 1763835144122
+entry_point_name: ''
+experiment_id: '606726760485292701'
+lifecycle_stage: active
+run_id: 567d12579d844974a033ab84cfa029fb
+run_name: Challenger_Distil_Model
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1763835090372
+status: 3
+tags: []
+user_id: Eda

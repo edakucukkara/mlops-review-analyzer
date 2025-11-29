@@ -1,0 +1,5 @@
+outs:
+- md5: 566d36925869933c3175ae47e70df98d
+  size: 106933545
+  hash: md5
+  path: gold_reviews.parquet

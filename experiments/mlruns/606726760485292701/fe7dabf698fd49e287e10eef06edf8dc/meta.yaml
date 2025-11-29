@@ -1,0 +1,14 @@
+artifact_uri: file:///c:/Users/Eda/OneDrive/Masa%C3%BCst%C3%BC/mlops_project/experiments/mlruns/606726760485292701/fe7dabf698fd49e287e10eef06edf8dc/artifacts
+end_time: 1763836239480
+entry_point_name: ''
+experiment_id: '606726760485292701'
+lifecycle_stage: active
+run_id: fe7dabf698fd49e287e10eef06edf8dc
+run_name: Final_Stress_Test_DeBERTa
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1763836041762
+status: 3
+tags: []
+user_id: Eda

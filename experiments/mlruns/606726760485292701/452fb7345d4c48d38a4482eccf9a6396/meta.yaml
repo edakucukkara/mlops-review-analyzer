@@ -1,0 +1,14 @@
+artifact_uri: file:///c:/Users/Eda/OneDrive/Masa%C3%BCst%C3%BC/mlops_project/experiments/mlruns/606726760485292701/452fb7345d4c48d38a4482eccf9a6396/artifacts
+end_time: 1763835193946
+entry_point_name: ''
+experiment_id: '606726760485292701'
+lifecycle_stage: active
+run_id: 452fb7345d4c48d38a4482eccf9a6396
+run_name: SOTA_DeBERTa_Model
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1763835144161
+status: 3
+tags: []
+user_id: Eda
