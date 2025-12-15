@@ -2,9 +2,22 @@ import streamlit as st
 import requests
 import pandas as pd
 import plotly.express as px
+import datetime
+import sys
+
+def log_feedback(asin, feedback_type):
+    """Simple HITL logging function for user feedback tracking"""
+    timestamp = datetime.datetime.now().isoformat()
+    # This log will be written to the Streamlit container logs
+    print(f"HITL_LOG: {timestamp}, ASIN: {asin}, Feedback: {feedback_type}")
+
+    # Flush stdout to ensure immediate logging
+    sys.stdout.flush()
 
 # --- CONFIGURATION ---
-API_URL = "http://127.0.0.1:8000"
+#API_URL = "http://127.0.0.1:8000"
+#API_URL = "http://localhost:8000"
+API_URL = "http://backend:8000"
 st.set_page_config(page_title="Product Review Analyzer", page_icon="🛍️", layout="wide")
 
 # --- SESSION STATE ---
@@ -151,7 +164,15 @@ else:
         # 4. FEEDBACK (Restored BOTH Buttons)
         st.divider()
         c1, c2, _ = st.columns([1, 1, 6])
+        selected_asin = st.session_state.selected_asin
         if c1.button("👍 Verified"):
             st.toast("Feedback saved!", icon="💾")
+            # Log positive HITL feedback
+            log_feedback(selected_asin, "POSITIVE")
+
         if c2.button("👎 Inaccurate"):
             st.toast("Negative feedback logged for review.", icon="🚩")
+            # Log negative HITL feedback
+            log_feedback(selected_asin, "NEGATIVE")
+
+# python -m streamlit run ui.py

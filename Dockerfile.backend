@@ -1,0 +1,22 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Copy only requirements first for better layer caching
+COPY requirements.txt .
+
+# Install dependencies (torch will be installed as transformers dependency)
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code and data
+COPY app.py .
+COPY data/ data/
+
+EXPOSE 8000
+
+# Set environment variables for better performance
+ENV TRANSFORMERS_OFFLINE=0
+ENV TOKENIZERS_PARALLELISM=false
+ENV OMP_NUM_THREADS=4
+
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]

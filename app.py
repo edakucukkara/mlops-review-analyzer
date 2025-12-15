@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from typing import List, Dict
 from functools import lru_cache
 import re
+import time
 
 # --- CONFIGURATION ---
 DATA_PATH = "data/gold_reviews.parquet"
@@ -35,7 +36,12 @@ print(f"Data Loaded. Menu contains {len(product_menu)} valid products.")
 device = 0 if torch.cuda.is_available() else -1
 print("Loading Classifier...")
 classifier = pipeline("zero-shot-classification", model=CLASSIFIER_MODEL, device=device)
-print("Classifier Ready")
+print("Classifier Loaded. Warming up model...")
+
+# Warm-up: Run dummy inference to load model weights into memory
+with torch.inference_mode():
+    _ = classifier(["warm up test"], candidate_labels=LABELS[:2])
+print("Model Ready and Warmed Up")
 
 # --- DATA MODELS ---
 class ReviewDetail(BaseModel):
@@ -104,7 +110,10 @@ def cached_inference(asin: str):
     sentiment_counts = {"Positive": 0, "Negative": 0, "Neutral": 0}
 
     raw_texts = [clean_text(t) for t in target_reviews['text'].tolist()]
-    results = classifier(raw_texts, candidate_labels=LABELS, multi_label=True)
+
+    # Use torch.inference_mode() for faster inference and batch processing
+    with torch.inference_mode():
+        results = classifier(raw_texts, candidate_labels=LABELS, multi_label=True, batch_size=16)
 
     for i, row in enumerate(target_reviews.itertuples()):
         res = results[i]
@@ -149,7 +158,16 @@ def get_products():
 
 @app.get("/analyze/{asin}", response_model=ReviewAnalysis)
 def analyze_product(asin: str):
+    start_time = time.time() 
+
     result = cached_inference(asin)
+
     if not result:
         raise HTTPException(status_code=404, detail="Product not found")
+
+    end_time = time.time() 
+    latency_ms = (end_time - start_time) * 1000
+
+    print(f"INFO: [MONITORING] Analysis Latency for {asin}: {latency_ms:.2f} ms") 
+
     return result
