@@ -278,8 +278,8 @@ LABELS = [
 
 ## Authors
 
-- Eda Kucukkara (150210325)
-- Revna Altinoz (150220756)
+- Eda Selin Küçükkara
+- Revna Altınöz
 
 **Course**: YZV448E - MLOps (Istanbul Technical University)
 
