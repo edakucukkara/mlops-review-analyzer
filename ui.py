@@ -15,9 +15,9 @@ def log_feedback(asin, feedback_type):
     sys.stdout.flush()
 
 # --- CONFIGURATION ---
-#API_URL = "http://127.0.0.1:8000"
-#API_URL = "http://localhost:8000"
-API_URL = "http://backend:8000"
+import os
+# Support both Docker Compose and Hugging Face Spaces deployment
+API_URL = os.getenv("API_URL", "http://localhost:8000")
 st.set_page_config(page_title="Product Review Analyzer", page_icon="🛍️", layout="wide")
 
 # --- SESSION STATE ---
