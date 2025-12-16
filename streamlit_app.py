@@ -7,6 +7,13 @@ import torch
 from transformers import pipeline
 import re
 import time
+import os
+
+# --- DVC SETUP ---
+# Pull data from DVC if not already present
+if not os.path.exists("data/gold_reviews.parquet"):
+    from setup_dvc import setup_dvc
+    setup_dvc()
 
 # --- CONFIGURATION ---
 DATA_PATH = "data/gold_reviews.parquet"

@@ -4,3 +4,5 @@ plotly
 transformers
 torch
 pyarrow
+dvc
+dvc-gdrive
