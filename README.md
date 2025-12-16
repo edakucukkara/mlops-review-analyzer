@@ -1,290 +1,216 @@
-# Product Review Analyzer - MLOps Project
+# MLOps Review Analyzer
 
-An on-demand system for e-commerce review analysis and topic classification using Zero-Shot Learning.
+**An On-Demand System for E-Commerce Review Analysis and Topic Classification**
 
-## Project Overview
-
-This MLOps project demonstrates a complete pipeline from data ingestion to deployment, focusing on analyzing Amazon product reviews to extract actionable insights. The system uses **DeBERTa Zero-Shot Classification** to categorize reviews into predefined topics without requiring task-specific training.
-
-### Key Features
-
-- **Zero-Shot Topic Classification**: Analyzes reviews across 6 predefined topics (Quality, Price, Scent, Packaging, Safety, Service)
-- **Real-time Inference**: On-demand analysis with optimized latency
-- **Human-in-the-Loop (HITL)**: Feedback mechanism for continuous model improvement
-- **Data Drift Detection**: Statistical monitoring using Kolmogorov-Smirnov test
-- **Reproducible Pipeline**: DVC for data versioning, MLflow for experiment tracking
-- **Containerized Deployment**: Docker-based architecture for cross-platform compatibility
+Authors: Eda Küçükkara (150210325), Revna Altınöz (150220756)  
+Course: YZV448E - MLOps
 
 ---
 
-## Architecture
+## 📋 Table of Contents
+
+1. [Problem Definition](#problem-definition)
+2. [System Architecture](#system-architecture)
+3. [MLOps Components](#mlops-components)
+4. [Installation & Setup](#installation--setup)
+5. [Monitoring & Observability](#monitoring--observability)
+6. [Project Structure](#project-structure)
+7. [Design Decisions & Trade-offs](#design-decisions--trade-offs)
+
+---
+
+## 🎯 Problem Definition
+
+### What We Solve
+E-commerce product pages feature thousands of customer reviews. Manual reading is impractical and leads to decision fatigue. Our system accepts a product ID (ASIN) and provides an on-demand aggregated summary of main topics discussed in reviews.
+
+### Why It's Important
+- **User Experience**: Reduces information overload
+- **Business Impact**: Improves conversion rates
+- **Seller Insights**: Rapid overview of customer feedback
+
+### Stakeholders
+- **End-Users**: Receive instant product insights
+- **Platforms/Sellers**: Improved UX and actionable feedback
+- **MLOps Engineers**: System reliability and maintainability
+
+---
+
+## 🏗️ System Architecture
 
 ```
-+-------------+      +--------------+      +-------------+
-|  Streamlit  |----->|   FastAPI    |----->|   DeBERTa   |
-|     UI      |      |   Backend    |      |   Model     |
-+-------------+      +--------------+      +-------------+
-                            |
-                            v
-                    +--------------+
-                    |  Data Store  |
-                    |   (Parquet)  |
-                    +--------------+
+User Input (ASIN)
+      ↓
+Streamlit UI (streamlit_app.py) / FastAPI Backend (app.py)
+      ↓
+DVC-versioned Dataset (701K reviews)
+      ↓
+Zero-Shot Classifier (DeBERTa)
+      ↓
+Aggregated Analysis & Visualizations
 ```
 
 ### Components
-
-1. **Frontend**: Streamlit web interface for product selection and visualization
-2. **Backend**: FastAPI service with inference caching and latency monitoring
-3. **Model**: `MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli` (982ms avg latency, selected via MLflow experiments)
-4. **Data**: Amazon Beauty Reviews dataset (701K+ reviews) versioned with DVC
+- **Data**: 701K Amazon Beauty Reviews (DVC + Git LFS)
+- **Model**: DeBERTa Zero-Shot Classification
+- **Backend**: FastAPI (optional, for Docker mode)
+- **Frontend**: Streamlit
+- **Deployment**: Streamlit Cloud / Docker Compose
 
 ---
 
-## Quick Start
+## 🔧 MLOps Components
 
-### Prerequisites
-
-- Docker & Docker Compose
-- Python 3.10+ (for local development)
-- Git
-
-### Running with Docker (Recommended)
-
+### 1. Data Version Control (DVC)
 ```bash
-# Clone the repository
-git clone https://github.com/edakucukkara/mlops-review-analyzer
-cd mlops-review-analyzer
-
-# Start the services
-docker-compose up --build
-
-# Access the application
-# Frontend: http://localhost:8501
-# Backend API: http://localhost:8000
+dvc pull  # Pull versioned dataset from Google Drive
 ```
 
-### Local Development
+### 2. Model Caching & Optimization
+- `torch.inference_mode()`: 20-30% speedup
+- Batch processing: `batch_size=16`
+- Streamlit caching: Model loaded once, results cached
 
-```bash
-# Install dependencies
-pip install -r requirements.txt
+### 3. Monitoring
+- Latency logging for every inference
+- HITL feedback buttons (✅ Verified / ❌ Inaccurate)
+- Drift detection: `python drift_detector.py`
 
-# Pull data from DVC
-dvc pull
-
-# Start backend
-uvicorn app:app --reload
-
-# Start frontend (in another terminal)
-streamlit run ui.py
-```
-
----
-
-## Model Selection Process
-
-We evaluated 3 models using **MLflow** for experiment tracking:
-
-| Model | Avg Latency (ms) | Decision |
-|-------|------------------|----------|
-| BART-Large | 1816 | Too slow |
-| DistilBART | 1058 | Lower accuracy |
-| **DeBERTa** | **982** | **Winner** (1.85x faster than baseline) |
-
-**Rationale**: DeBERTa provides the best balance between accuracy and inference speed for real-time analysis.
-
-See full experiments in `experiments/model_selection.ipynb`
-
----
-
-## Data Pipeline
-
-### Dataset
-- **Source**: [Amazon Reviews 2023](https://huggingface.co/datasets/McAuley-Lab/Amazon-Reviews-2023) (All Beauty category)
-- **Size**: 701,528 reviews
-- **Format**: Parquet (efficient columnar storage)
-- **Versioning**: DVC with Google Drive remote storage
-
-### Preprocessing Steps
-1. Download raw JSONL data from HuggingFace
-2. Merge reviews with product metadata
-3. Extract product images and ratings
-4. Filter products with minimum 5 reviews
-5. Export to Parquet format
-
-Run the pipeline:
-```bash
-python data_ingestion.py
-```
-
----
-
-## Monitoring and Observability
-
-### 1. Latency Tracking
-Every API request logs response time:
-```python
-# See app.py line 163
-print(f"[MONITORING] Analysis Latency for {asin}: {latency_ms:.2f} ms")
-```
-
-### 2. Human-in-the-Loop Feedback
-UI includes "Verified" and "Inaccurate" buttons to collect user feedback:
-```python
-# See ui.py lines 171-176
-log_feedback(asin, "POSITIVE")  # Logged to container output
-```
-
-### 3. Data Drift Detection
-Simulated drift monitoring using statistical tests:
-```bash
-# Run drift detection
-docker-compose exec backend python drift_detector.py
-```
-
-Output example:
-```
-KS Statistic: 0.0234
-P-Value: 0.0012
-ALERT: Data Drift Detected (p < 0.05)
-```
-
----
-
-## Performance Optimizations
-
-Applied optimizations:
-
-1. **Batch Processing**: Process 50 reviews in single forward pass with `batch_size=16`
-2. **Torch Inference Mode**: Disabled gradient computation for 20-30% speedup
-3. **Model Warm-up**: Pre-load weights during container startup
-4. **LRU Caching**: Cache analysis results for popular products (`@lru_cache(maxsize=50)`)
-5. **Environment Tuning**: Optimized threading and parallelism settings
-
-**Performance improvement**: 40-50% reduction in inference latency compared to naive implementation.
-
----
-
-## Testing Performance
-
-### Test a Product Analysis
-
-```bash
-# Using curl
-curl http://localhost:8000/analyze/B00YQ6X8EO
-
-# Check latency in backend logs
-docker-compose logs backend | grep MONITORING
-```
-
-### Run Performance Test Suite
-
+### 4. Performance Testing
 ```bash
 python test_performance.py
 ```
 
-### View MLflow Experiments
+---
+
+## 🚀 Installation & Setup
+
+### Option 1: Streamlit Cloud (Simplest)
+
+**Live Demo**: https://mlops-review-analyzer-idgpkjjlmvgmlxmtnducy5.streamlit.app
 
 ```bash
-cd experiments
-mlflow ui
+git clone https://github.com/edakucukkara/mlops-review-analyzer.git
+cd mlops-review-analyzer
+pip install -r requirements.txt
+git lfs pull  # Data automatically available
+streamlit run streamlit_app.py
+```
 
-# Open http://localhost:5000
+### Option 2: Docker Compose (Full Stack)
+
+```bash
+git clone https://github.com/edakucukkara/mlops-review-analyzer.git
+cd mlops-review-analyzer
+dvc pull  # or git lfs pull
+docker-compose up --build
+```
+
+- Backend: http://localhost:8000
+- Frontend: http://localhost:8501
+
+---
+
+## 📊 Monitoring & Observability
+
+### Performance Metrics
+- **First request**: 76-327s (model loading)
+- **Cached requests**: 10-12ms (27,000x faster)
+
+### HITL Feedback
+```
+HITL_LOG: 2025-12-16T16:25:32, ASIN: B00YQ6X8EO, Feedback: POSITIVE
+```
+
+### Drift Detection
+```bash
+python drift_detector.py
+# Output: KS Test p-value, drift alerts
 ```
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 mlops-review-analyzer/
-├── app.py                      # FastAPI backend
-├── ui.py                       # Streamlit frontend
-├── data_ingestion.py           # Data pipeline script
-├── drift_detector.py           # Drift monitoring script
-├── test_performance.py         # Performance testing script
-├── requirements.txt            # Python dependencies
-├── docker-compose.yml          # Multi-container setup
-├── Dockerfile.backend          # Backend container config
-├── Dockerfile.frontend         # Frontend container config
-├── .dvc/                       # DVC configuration
 ├── data/
-│   └── gold_reviews.parquet    # Processed dataset (DVC tracked)
-├── experiments/
-│   └── model_selection.ipynb   # MLflow experiments
-└── .streamlit/
-    └── config.toml             # Streamlit configuration
+│   ├── gold_reviews.parquet       # Dataset (Git LFS)
+│   └── gold_reviews.parquet.dvc   # DVC metadata
+├── .streamlit/config.toml          # Streamlit configuration
+├── app.py                          # FastAPI backend
+├── ui.py                           # Streamlit UI (Docker mode)
+├── streamlit_app.py                # Standalone app (Cloud mode)
+├── drift_detector.py               # Drift monitoring
+├── test_performance.py             # Performance tests
+├── docker-compose.yml              # Container orchestration
+├── requirements.txt                # Dependencies
+└── README.md                       # Documentation
 ```
 
 ---
 
-## Configuration
+## ⚖️ Design Decisions & Trade-offs
 
-### Environment Variables
+### Model: Zero-Shot Classification
+- ✅ No training needed, flexible topics
+- ❌ Slower than fine-tuned models
+- **Justification**: Business flexibility > speed
 
-**Backend** (`docker-compose.yml`):
-```yaml
-environment:
-  - DATA_PATH=data/gold_reviews.parquet
-  - OMP_NUM_THREADS=4
-  - TOKENIZERS_PARALLELISM=false
+### Caching Strategy
+- ✅ 27,000x speedup for popular products
+- ❌ First request slow
+- **Justification**: Most users query popular items
+
+### Deployment: Dual Mode
+- **Cloud**: Streamlit Cloud (simple, auto-scale)
+- **Local**: Docker Compose (full control)
+
+---
+
+## 🛡️ Ethical Considerations
+
+- **Data**: Public Amazon reviews (no PII)
+- **Bias**: Zero-shot reduces language bias
+- **Transparency**: Statistical summaries (no hallucinations)
+- **Security**: No external API calls, no user data stored
+
+---
+
+## 👥 Team Contributions
+
+**Eda Küçükkara**: Data pipeline, model optimization, cloud deployment, UI/UX  
+**Revna Altınöz**: FastAPI backend, Docker, drift detection
+
+---
+
+## 📚 References
+
+1. Blei et al. (2003). *Latent Dirichlet Allocation*
+2. Grootendorst (2022). *BERTopic*
+3. Huyen (2022). *Designing Machine Learning Systems*
+4. Yin et al. (2019). *Zero-shot Text Classification*
+
+---
+
+## 🐛 Troubleshooting
+
+**Streamlit Cloud health check errors**:
+- Temporary during model loading (2-3 min)
+- Reboot app if persists
+
+**Data not found**:
+```bash
+git lfs install && git lfs pull
 ```
 
-**Frontend** (`docker-compose.yml`):
-```yaml
-environment:
-  - API_URL=http://backend:8000
-```
-
-### Modifying Topics
-
-Edit the `LABELS` list in `app.py`:
-```python
-LABELS = [
-    "Quality & Effectiveness",
-    "Scent & Texture",
-    "Price & Value",
-    "Packaging & Shipping",
-    "Safety & Authenticity",
-    "Service"
-]
+**Docker connection refused**:
+```bash
+docker-compose ps
+docker-compose logs
 ```
 
 ---
 
-## MLOps Best Practices Implemented
-
-| Practice | Implementation |
-|----------|----------------|
-| **Data Versioning** | DVC with remote storage |
-| **Experiment Tracking** | MLflow with 3 model comparisons |
-| **Model Registry** | MLflow model registry (local) |
-| **CI/CD** | Docker multi-stage builds |
-| **Monitoring** | Latency logging + drift detection |
-| **Reproducibility** | Pinned dependencies + Docker |
-| **Feedback Loop** | HITL mechanism in UI |
-
----
-
-## References
-
-1. Blei et al. (2003) - Latent Dirichlet Allocation
-2. Grootendorst (2022) - BERTopic
-3. Huyen (2022) - Designing Machine Learning Systems
-4. Yin et al. (2019) - Benchmarking Zero-shot Text Classification
-
----
-
-## Authors
-
-- Eda Selin Küçükkara
-- Revna Altınöz
-
-**Course**: YZV448E - MLOps (Istanbul Technical University)
-
----
-
-## License
-
-This project is for educational purposes as part of the MLOps course curriculum.
+**Live Demo**: https://mlops-review-analyzer-idgpkjjlmvgmlxmtnducy5.streamlit.app  
+**GitHub**: https://github.com/edakucukkara/mlops-review-analyzer

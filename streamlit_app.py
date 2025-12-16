@@ -94,7 +94,7 @@ def generate_smart_summary(topic_counts, sentiment_counts, total_analyzed):
 
     return summary
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def analyze_product(asin: str, _classifier, _df):
     """
     Analyze product reviews using the classifier.
