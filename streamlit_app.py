@@ -9,13 +9,9 @@ import re
 import time
 import os
 
-# --- DVC SETUP ---
-# Pull data from DVC if not already present
-if not os.path.exists("data/gold_reviews.parquet"):
-    from setup_dvc import setup_dvc
-    setup_dvc()
-
 # --- CONFIGURATION ---
+# Note: Data is tracked with Git LFS for Streamlit Cloud deployment
+# For local development with DVC, run: dvc pull
 DATA_PATH = "data/gold_reviews.parquet"
 CLASSIFIER_MODEL = "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli"
 MAX_REVIEWS_TO_ANALYZE = 50
@@ -208,6 +204,7 @@ with st.sidebar:
             st.session_state.selected_asin = final_asin
             # Reset data to trigger reload
             st.session_state.analysis_data = None
+            st.rerun()
 
 # --- MAIN PAGE LOGIC ---
 
